@@ -1,43 +1,66 @@
-# Astro Starter Kit: Minimal
+# Hamza Tahri Jouti — Portfolio
 
-```sh
-npm create astro@latest -- --template minimal
-```
+> **Live:** [https://portfolio-hamza-tahri-jouti.vercel.app](https://portfolio-hamza-tahri-jouti.vercel.app)
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+A modern, responsive personal portfolio built with **Astro** and deployed on **Vercel**. Features dark/light theme, glassmorphism design, AI chatbot assistant, and ATS-compatible resume export (PDF & DOCX).
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
+## Project Structure
 
 ```text
 /
-├── public/
+├── public/              # Static assets (favicon)
 ├── src/
+│   ├── components/      # Reusable Astro components
+│   │   ├── Header.astro
+│   │   ├── Hero.astro
+│   │   ├── About.astro
+│   │   ├── Skills.astro
+│   │   ├── Education.astro
+│   │   ├── Projects.astro
+│   │   ├── Contact.astro
+│   │   ├── Footer.astro
+│   │   ├── BackToTop.astro
+│   │   ├── AiAssistant.astro
+│   │   └── ResumeExport.astro
+│   ├── data/
+│   │   └── portfolio.ts # ← Single source of truth for all content
+│   ├── layouts/
+│   │   └── BaseLayout.astro
 │   └── pages/
 │       └── index.astro
+├── vercel.json
+├── astro.config.mjs
 └── package.json
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## How to Update Content
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+Edit **`src/data/portfolio.ts`** — this single file controls all sections: personal info, skills, education, experience, publications, projects, certifications, and social links. Navigation is generated automatically from sections with data.
 
-Any static assets, like images, can be placed in the `public/` directory.
+## Commands
 
-## 🧞 Commands
+| Command             | Action                                      |
+| :------------------ | :------------------------------------------ |
+| `npm install`       | Install dependencies                        |
+| `npm run dev`       | Start local dev server at `localhost:4321`   |
+| `npm run build`     | Build production site to `./dist/`           |
+| `npm run preview`   | Preview build locally                        |
+| `npx vercel --prod` | Deploy to Vercel                             |
 
-All commands are run from the root of the project, from a terminal:
+## Features
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+- Dark/Light theme with glassmorphism design
+- Fully responsive (mobile, tablet, desktop)
+- AI chatbot assistant (client-side, no API needed)
+- ATS-compatible resume export (PDF & DOCX)
+- Scroll-reveal animations
+- Contact form via FormSubmit
+- Vercel Analytics integration
 
-## 👀 Want to learn more?
+## Tech Stack
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+**Astro** · **TypeScript** · **CSS Custom Properties** · **jsPDF** · **docx** · **Vercel**
+
+---
+
+Built with [Astro](https://astro.build) · Deployed on [Vercel](https://vercel.com)
