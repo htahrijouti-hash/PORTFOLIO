@@ -1,0 +1,551 @@
+---
+/**
+ * ResumeExport.astro
+ * ====================
+ * Modal dialog for exporting portfolio data as ATS-compatible PDF or DOCX.
+ * Libraries (jsPDF, docx) are dynamically imported for code-splitting.
+ */
+import {
+  personalInfo, technicalSkills, softSkills, education, experiences,
+  publications, projects, socialLinks, certifications,
+} from '../data/portfolio';
+
+/* Strip HTML tags from about paragraphs */
+function stripHtml(str: string): string {
+  return str.replace(/<[^>]*>/g, '');
+}
+
+const resumeData = {
+  name: `${personalInfo.firstName} ${personalInfo.lastName}`,
+  firstName: personalInfo.firstName,
+  lastName: personalInfo.lastName,
+  title: personalInfo.title,
+  email: personalInfo.emails[0],
+  phone: personalInfo.phone || '',
+  location: personalInfo.location,
+  summary: personalInfo.about.map(stripHtml).join(' '),
+  skills: technicalSkills.map(c => ({ category: c.title, items: c.skills })),
+  softSkills: softSkills.map(s => s.name),
+  education: education.map(e => ({
+    degree: e.degree,
+    field: e.field,
+    institution: e.institution,
+    period: e.period,
+    description: stripHtml(e.description),
+  })),
+  experience: experiences.map(e => ({
+    role: e.role,
+    company: e.company,
+    period: e.period,
+    description: stripHtml(e.description),
+    current: e.current || false,
+  })),
+  publications: publications.map(p => ({
+    title: p.title,
+    journal: p.journal,
+    year: p.year,
+    authors: p.authors,
+  })),
+  projects: projects.map(p => ({
+    title: p.title,
+    description: stripHtml(p.description),
+    tags: p.tags,
+    url: p.url || '',
+  })),
+  social: socialLinks.filter(l => ['github', 'linkedin'].includes(l.icon)).map(l => ({ label: l.label, url: l.url })),
+};
+---
+
+<div class="rex" id="resume-export" aria-hidden="true">
+  <div class="rex__backdrop" id="rex-backdrop"></div>
+  <div class="rex__modal" id="rex-modal">
+    <button class="rex__close" id="rex-close" type="button" aria-label="Close">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+
+    <h3 class="rex__title gradient-text">Download Resume</h3>
+    <p class="rex__subtitle">Export your professional resume in ATS-compatible format.</p>
+
+    <div class="rex__cards">
+      <!-- PDF -->
+      <button class="rex__card" id="rex-pdf" type="button">
+        <div class="rex__card-icon rex__card-icon--pdf">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </div>
+        <span class="rex__card-badge rex__card-badge--pdf">PDF</span>
+        <span class="rex__card-label">PDF Document</span>
+        <span class="rex__card-desc">Best for online applications & email</span>
+      </button>
+
+      <!-- DOCX -->
+      <button class="rex__card" id="rex-docx" type="button">
+        <div class="rex__card-icon rex__card-icon--docx">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </div>
+        <span class="rex__card-badge rex__card-badge--docx">DOCX</span>
+        <span class="rex__card-label">Word Document</span>
+        <span class="rex__card-desc">Best for editing & ATS systems</span>
+      </button>
+    </div>
+
+    <!-- Status bar -->
+    <div class="rex__status" id="rex-status"></div>
+  </div>
+</div>
+
+<script is:inline define:vars={{ resumeData: JSON.stringify(resumeData) }}>
+(function () {
+  var R = JSON.parse(resumeData);
+  var overlay = document.getElementById('resume-export');
+  var backdrop = document.getElementById('rex-backdrop');
+  var closeBtn = document.getElementById('rex-close');
+  var status = document.getElementById('rex-status');
+
+  function openModal() { overlay.classList.add('open'); overlay.setAttribute('aria-hidden', 'false'); }
+  function closeModal() { overlay.classList.remove('open'); overlay.setAttribute('aria-hidden', 'true'); status.innerHTML = ''; }
+
+  window.addEventListener('open-resume-export', openModal);
+  backdrop.addEventListener('click', closeModal);
+  closeBtn.addEventListener('click', closeModal);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal();
+  });
+
+  function setStatus(html) { status.innerHTML = html; }
+  var spinner = '<span class="rex__spinner"></span>';
+
+  /* ---- PDF Generation ---- */
+  document.getElementById('rex-pdf').addEventListener('click', async function () {
+    setStatus(spinner + ' Generating PDF…');
+    try {
+      var jsPDFModule = await import('https://cdn.jsdelivr.net/npm/jspdf@2.5.2/+esm');
+      var jsPDF = jsPDFModule.jsPDF || jsPDFModule.default;
+      var doc = new jsPDF({ unit: 'mm', format: 'a4' });
+      var W = 210, M = 15, CW = W - 2 * M, y = M;
+
+      function checkPage(need) {
+        if (y + need > 282) { doc.addPage(); y = M; }
+      }
+
+      /* Name */
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.text(R.name, W / 2, y, { align: 'center' });
+      y += 8;
+
+      /* Title */
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(80, 80, 80);
+      doc.text(R.title, W / 2, y, { align: 'center' });
+      y += 6;
+
+      /* Contact line */
+      var contact = [R.email, R.phone, R.location].filter(Boolean).join('  |  ');
+      doc.setFontSize(9);
+      doc.text(contact, W / 2, y, { align: 'center' });
+      y += 5;
+
+      /* Social */
+      if (R.social.length) {
+        var socialLine = R.social.map(function (s) { return s.label + ': ' + s.url; }).join('  |  ');
+        doc.setTextColor(37, 99, 235);
+        doc.text(socialLine, W / 2, y, { align: 'center', maxWidth: CW });
+        y += 6;
+      }
+      doc.setTextColor(0, 0, 0);
+
+      function sectionHeader(title) {
+        checkPage(14);
+        y += 4;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text(title.toUpperCase(), M, y);
+        y += 1;
+        doc.setDrawColor(37, 99, 235);
+        doc.setLineWidth(0.5);
+        doc.line(M, y, W - M, y);
+        y += 5;
+        doc.setDrawColor(0);
+      }
+
+      function bodyText(text, indent) {
+        indent = indent || 0;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        var lines = doc.splitTextToSize(text, CW - indent);
+        checkPage(lines.length * 4);
+        doc.text(lines, M + indent, y);
+        y += lines.length * 4;
+      }
+
+      /* Summary */
+      sectionHeader('Professional Summary');
+      bodyText(R.summary);
+
+      /* Experience */
+      if (R.experience.length) {
+        sectionHeader('Experience');
+        R.experience.forEach(function (e) {
+          checkPage(16);
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+          doc.text(e.role, M, y);
+          doc.setFont('helvetica', 'italic'); doc.setFontSize(9);
+          doc.text(e.company + '  |  ' + e.period, W - M, y, { align: 'right' });
+          y += 5;
+          bodyText('• ' + e.description, 4);
+          y += 2;
+        });
+      }
+
+      /* Education */
+      sectionHeader('Education');
+      R.education.forEach(function (e) {
+        checkPage(16);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+        doc.text(e.degree + ' — ' + e.field, M, y);
+        doc.setFont('helvetica', 'italic'); doc.setFontSize(9);
+        doc.text(e.institution + '  |  ' + e.period, W - M, y, { align: 'right' });
+        y += 5;
+        bodyText('• ' + e.description, 4);
+        y += 2;
+      });
+
+      /* Skills */
+      sectionHeader('Technical Skills');
+      R.skills.forEach(function (s) {
+        checkPage(8);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+        doc.text(s.category + ': ', M, y);
+        var catW = doc.getTextWidth(s.category + ': ');
+        doc.setFont('helvetica', 'normal');
+        doc.text(s.items.join(', '), M + catW, y);
+        y += 5;
+      });
+
+      if (R.softSkills.length) {
+        checkPage(8);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+        doc.text('Soft Skills: ', M, y);
+        var sw = doc.getTextWidth('Soft Skills: ');
+        doc.setFont('helvetica', 'normal');
+        doc.text(R.softSkills.join(', '), M + sw, y);
+        y += 5;
+      }
+
+      /* Publications */
+      if (R.publications.length) {
+        sectionHeader('Publications');
+        R.publications.forEach(function (p) {
+          checkPage(10);
+          bodyText('• ' + p.title + ' — ' + p.journal + ' (' + p.year + ')', 4);
+          y += 1;
+        });
+      }
+
+      /* Projects */
+      sectionHeader('Projects');
+      R.projects.forEach(function (p) {
+        checkPage(14);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+        doc.text(p.title, M, y);
+        if (p.url) {
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+          doc.setTextColor(37, 99, 235);
+          doc.text(p.url, W - M, y, { align: 'right' });
+          doc.setTextColor(0, 0, 0);
+        }
+        y += 5;
+        bodyText('• ' + p.description + ' [' + p.tags.join(', ') + ']', 4);
+        y += 2;
+      });
+
+      var fileName = R.firstName + '_' + R.lastName.replace(/\s+/g, '_') + '_Resume.pdf';
+      doc.save(fileName);
+      setStatus('<span style="color:var(--color-success)">✓ PDF downloaded successfully!</span>');
+    } catch (err) {
+      console.error(err);
+      setStatus('<span style="color:#ef4444">✗ Error generating PDF. Please try again.</span>');
+    }
+  });
+
+  /* ---- DOCX Generation ---- */
+  document.getElementById('rex-docx').addEventListener('click', async function () {
+    setStatus(spinner + ' Generating Word document…');
+    try {
+      var docxModule = await import('https://cdn.jsdelivr.net/npm/docx@9.5.0/+esm');
+      var fileSaverModule = await import('https://cdn.jsdelivr.net/npm/file-saver@2.0.5/+esm');
+
+      var Document = docxModule.Document;
+      var Paragraph = docxModule.Paragraph;
+      var TextRun = docxModule.TextRun;
+      var HeadingLevel = docxModule.HeadingLevel;
+      var AlignmentType = docxModule.AlignmentType;
+      var Packer = docxModule.Packer;
+      var BorderStyle = docxModule.BorderStyle;
+      var saveAs = fileSaverModule.saveAs || fileSaverModule.default;
+
+      var children = [];
+
+      /* Name */
+      children.push(new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text: R.name, bold: true, size: 36, font: 'Calibri' })],
+        spacing: { after: 100 },
+      }));
+
+      /* Title */
+      children.push(new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text: R.title, size: 22, color: '555555', font: 'Calibri' })],
+        spacing: { after: 80 },
+      }));
+
+      /* Contact */
+      var contactLine = [R.email, R.phone, R.location].filter(Boolean).join('  |  ');
+      children.push(new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text: contactLine, size: 18, font: 'Calibri' })],
+        spacing: { after: 80 },
+      }));
+
+      /* Social */
+      if (R.social.length) {
+        children.push(new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [new TextRun({ text: R.social.map(function(s){return s.label+': '+s.url}).join('  |  '), size: 18, color: '2563EB', font: 'Calibri' })],
+          spacing: { after: 200 },
+        }));
+      }
+
+      function addHeading(text) {
+        children.push(new Paragraph({
+          heading: HeadingLevel.HEADING_2,
+          children: [new TextRun({ text: text.toUpperCase(), bold: true, size: 22, font: 'Calibri', color: '2563EB' })],
+          border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '2563EB' } },
+          spacing: { before: 300, after: 150 },
+        }));
+      }
+
+      function addBody(text) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: text, size: 20, font: 'Calibri' })],
+          spacing: { after: 80 },
+        }));
+      }
+
+      function addBullet(text) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: text, size: 20, font: 'Calibri' })],
+          bullet: { level: 0 },
+          spacing: { after: 60 },
+        }));
+      }
+
+      /* Summary */
+      addHeading('Professional Summary');
+      addBody(R.summary);
+
+      /* Experience */
+      if (R.experience.length) {
+        addHeading('Experience');
+        R.experience.forEach(function (e) {
+          children.push(new Paragraph({
+            children: [
+              new TextRun({ text: e.role, bold: true, size: 20, font: 'Calibri' }),
+              new TextRun({ text: '  —  ', size: 20, font: 'Calibri' }),
+              new TextRun({ text: e.company, italics: true, size: 20, font: 'Calibri' }),
+              new TextRun({ text: '  |  ' + e.period, size: 18, color: '777777', font: 'Calibri' }),
+            ],
+            spacing: { before: 100, after: 60 },
+          }));
+          addBullet(e.description);
+        });
+      }
+
+      /* Education */
+      addHeading('Education');
+      R.education.forEach(function (e) {
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: e.degree + ' — ' + e.field, bold: true, size: 20, font: 'Calibri' }),
+            new TextRun({ text: '  |  ' + e.period, size: 18, color: '777777', font: 'Calibri' }),
+          ],
+          spacing: { before: 100, after: 40 },
+        }));
+        children.push(new Paragraph({
+          children: [new TextRun({ text: e.institution, italics: true, size: 20, font: 'Calibri' })],
+          spacing: { after: 60 },
+        }));
+        addBullet(e.description);
+      });
+
+      /* Skills */
+      addHeading('Technical Skills');
+      R.skills.forEach(function (s) {
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: s.category + ': ', bold: true, size: 20, font: 'Calibri', color: '2563EB' }),
+            new TextRun({ text: s.items.join(', '), size: 20, font: 'Calibri' }),
+          ],
+          spacing: { after: 60 },
+        }));
+      });
+      if (R.softSkills.length) {
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: 'Soft Skills: ', bold: true, size: 20, font: 'Calibri', color: '2563EB' }),
+            new TextRun({ text: R.softSkills.join(', '), size: 20, font: 'Calibri' }),
+          ],
+          spacing: { after: 60 },
+        }));
+      }
+
+      /* Publications */
+      if (R.publications.length) {
+        addHeading('Publications');
+        R.publications.forEach(function (p) {
+          addBullet(p.title + ' — ' + p.journal + ' (' + p.year + ')');
+        });
+      }
+
+      /* Projects */
+      addHeading('Projects');
+      R.projects.forEach(function (p) {
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: p.title, bold: true, size: 20, font: 'Calibri' }),
+            p.url ? new TextRun({ text: '  ' + p.url, size: 18, color: '2563EB', font: 'Calibri' }) : new TextRun({ text: '' }),
+          ],
+          spacing: { before: 100, after: 40 },
+        }));
+        addBullet(p.description + ' [' + p.tags.join(', ') + ']');
+      });
+
+      var docxDoc = new Document({
+        sections: [{ properties: {}, children: children }],
+      });
+
+      var blob = await Packer.toBlob(docxDoc);
+      var fileName = R.firstName + '_' + R.lastName.replace(/\s+/g, '_') + '_Resume.docx';
+      saveAs(blob, fileName);
+      setStatus('<span style="color:var(--color-success)">✓ Word document downloaded successfully!</span>');
+    } catch (err) {
+      console.error(err);
+      setStatus('<span style="color:#ef4444">✗ Error generating DOCX. Please try again.</span>');
+    }
+  });
+})();
+</script>
+
+<style>
+  .rex {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .rex.open { pointer-events: auto; opacity: 1; }
+  .rex__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+  }
+  .rex__modal {
+    position: relative;
+    padding: 36px 32px;
+    background: var(--color-glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-lg);
+    max-width: 520px;
+    width: 92%;
+    text-align: center;
+    transform: scale(0.9) translateY(20px);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .rex.open .rex__modal { transform: scale(1) translateY(0); }
+  .rex__close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+  }
+  .rex__title { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
+  .rex__subtitle { font-size: 0.88rem; color: var(--color-text-muted); margin-bottom: 28px; }
+
+  .rex__cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .rex__card {
+    padding: 24px 16px;
+    background: var(--color-card);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    text-align: center;
+    transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+    font-family: var(--font-sans);
+  }
+  .rex__card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(139, 92, 246, 0.2);
+  }
+  .rex__card-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 12px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .rex__card-icon--pdf { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+  .rex__card-icon--docx { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+  .rex__card-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 100px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .rex__card-badge--pdf { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+  .rex__card-badge--docx { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+  .rex__card-label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; color: var(--color-text); }
+  .rex__card-desc { font-size: 0.75rem; color: var(--color-text-muted); }
+
+  .rex__status {
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 24px;
+  }
+
+  :global(.rex__spinner) {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(148, 163, 184, 0.3);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: rex-spin 0.6s linear infinite;
+  }
+  @keyframes rex-spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 768px) {
+    .rex__cards { grid-template-columns: 1fr; }
+  }
+</style>

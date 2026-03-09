@@ -1,0 +1,435 @@
+---
+/**
+ * Header.astro
+ * =============
+ * Sticky navigation with glassmorphism, mobile drawer, theme toggle,
+ * and IntersectionObserver-based active-link highlighting.
+ * All JS is self-contained in the inline <script>.
+ */
+import { personalInfo, navItems, socialLinks } from '../data/portfolio';
+
+/* ---- Lucide SVG paths ---- */
+const icons: Record<string, string> = {
+  home: '<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+  user: '<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  layers: '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
+  'graduation-cap': '<path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 6 3 6 3s6-1 6-3v-5"/>',
+  briefcase: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>',
+  'book-open': '<path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/>',
+  award: '<circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>',
+  'folder-open': '<path d="M2 7.5V19a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-6.31a1 1 0 01-.69-.28L10.69 4.28a1 1 0 00-.69-.28H4a2 2 0 00-2 2z"/>',
+  send: '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
+  sun: '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>',
+  moon: '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>',
+  menu: '<line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>',
+  x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  github: '<path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/>',
+  linkedin: '<path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-4 0v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>',
+  mail: '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>',
+  'chevron-right': '<polyline points="9 18 15 12 9 6"/>',
+  code: '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>',
+};
+
+function getIcon(name: string): string {
+  return icons[name] || '';
+}
+---
+
+<header class="header" id="header">
+  <div class="header__inner">
+    <!-- Logo -->
+    <a href="#hero" class="header__logo" aria-label="Home">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <Fragment set:html={getIcon('code')} />
+      </svg>
+      <span>{personalInfo.firstName} <span class="header__logo-accent">{personalInfo.lastName}</span></span>
+    </a>
+
+    <!-- Desktop nav -->
+    <nav class="header__nav" aria-label="Main navigation">
+      {navItems.map((item) => (
+        <a href={item.href} class="header__link" data-section={item.href.slice(1)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <Fragment set:html={getIcon(item.icon)} />
+          </svg>
+          {item.label}
+        </a>
+      ))}
+    </nav>
+
+    <!-- Right controls -->
+    <div class="header__controls">
+      <!-- Theme toggle -->
+      <button class="header__theme-btn" id="theme-toggle" aria-label="Toggle theme" type="button">
+        <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <Fragment set:html={getIcon('sun')} />
+        </svg>
+        <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <Fragment set:html={getIcon('moon')} />
+        </svg>
+      </button>
+
+      <!-- Hamburger -->
+      <button class="header__hamburger" id="menu-toggle" aria-label="Open menu" aria-expanded="false" type="button">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile drawer -->
+  <div class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer__backdrop" id="drawer-backdrop"></div>
+    <div class="drawer__panel">
+      <nav class="drawer__nav">
+        {navItems.map((item) => (
+          <a href={item.href} class="drawer__link" data-section={item.href.slice(1)}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <Fragment set:html={getIcon(item.icon)} />
+            </svg>
+            {item.label}
+          </a>
+        ))}
+      </nav>
+
+      <!-- Theme toggle in drawer -->
+      <button class="drawer__theme-btn" id="drawer-theme-toggle" type="button">
+        <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <Fragment set:html={getIcon('sun')} />
+        </svg>
+        <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <Fragment set:html={getIcon('moon')} />
+        </svg>
+        <span class="drawer__theme-label">Toggle theme</span>
+      </button>
+
+      <!-- Social links in drawer -->
+      <div class="drawer__social">
+        {socialLinks.map((link) => (
+          <a href={link.url} target="_blank" rel="noopener noreferrer" class="drawer__social-link" aria-label={link.label}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <Fragment set:html={getIcon(link.icon)} />
+            </svg>
+            {link.label}
+          </a>
+        ))}
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Autonomous Header script -->
+<script is:inline>
+(function () {
+  /* ---- Drawer ---- */
+  var toggle = document.getElementById('menu-toggle');
+  var drawer = document.getElementById('drawer');
+  var backdrop = document.getElementById('drawer-backdrop');
+  var drawerLinks = drawer ? drawer.querySelectorAll('.drawer__link') : [];
+  var header = document.getElementById('header');
+
+  function openDrawer() {
+    drawer.setAttribute('aria-hidden', 'false');
+    drawer.classList.add('open');
+    toggle.setAttribute('aria-expanded', 'true');
+    toggle.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeDrawer() {
+    drawer.setAttribute('aria-hidden', 'true');
+    drawer.classList.remove('open');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  toggle.addEventListener('click', function () {
+    var isOpen = drawer.classList.contains('open');
+    isOpen ? closeDrawer() : openDrawer();
+  });
+  backdrop.addEventListener('click', closeDrawer);
+  drawerLinks.forEach(function (l) { l.addEventListener('click', closeDrawer); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && drawer.classList.contains('open')) closeDrawer();
+  });
+
+  /* ---- Theme toggle ---- */
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('theme', t);
+    var mc = t === 'light' ? '#f8fafc' : '#0a0f1e';
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', mc);
+  }
+  function toggleTheme() {
+    var current = document.documentElement.getAttribute('data-theme') || 'dark';
+    setTheme(current === 'dark' ? 'light' : 'dark');
+  }
+  document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+  document.getElementById('drawer-theme-toggle').addEventListener('click', toggleTheme);
+
+  /* ---- Active link — IntersectionObserver ---- */
+  var sections = document.querySelectorAll('section[id]');
+  var navLinksAll = document.querySelectorAll('.header__link, .drawer__link');
+  var sectionIO = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          navLinksAll.forEach(function (l) {
+            l.classList.toggle('active', l.getAttribute('data-section') === entry.target.id);
+          });
+        }
+      });
+    },
+    { rootMargin: '-20% 0px -60% 0px' }
+  );
+  sections.forEach(function (s) { sectionIO.observe(s); });
+
+  /* ---- Header shrink on scroll ---- */
+  var lastY = 0;
+  var ticking = false;
+  window.addEventListener('scroll', function () {
+    lastY = window.scrollY;
+    if (!ticking) {
+      requestAnimationFrame(function () {
+        header.classList.toggle('scrolled', lastY > 50);
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive: true });
+})();
+</script>
+
+<style>
+  /* ---- Header ---- */
+  .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    padding: 16px 0;
+    background: var(--color-glass);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--color-glass-border);
+    transition: padding 0.3s;
+  }
+  .header.scrolled { padding: 10px 0; }
+
+  .header__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* Logo */
+  .header__logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    white-space: nowrap;
+  }
+  .header__logo svg { color: var(--color-primary); }
+  .header__logo-accent { color: var(--color-accent); }
+
+  /* Desktop nav */
+  .header__nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .header__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    transition: color 0.2s, background 0.2s;
+  }
+  .header__link:hover,
+  .header__link.active {
+    color: var(--color-text);
+    background: rgba(139, 92, 246, 0.08);
+  }
+  .header__link.active { color: var(--color-primary); }
+
+  /* Controls */
+  .header__controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Theme button */
+  .header__theme-btn {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-card);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text);
+    transition: border-color 0.2s;
+  }
+  .header__theme-btn:hover { border-color: var(--color-primary); }
+  .header__theme-btn .icon-sun,
+  .header__theme-btn .icon-moon { position: absolute; transition: opacity 0.25s, transform 0.25s; }
+
+  :global(html[data-theme='dark']) .header__theme-btn .icon-sun { opacity: 1; transform: rotate(0deg); }
+  :global(html[data-theme='dark']) .header__theme-btn .icon-moon { opacity: 0; transform: rotate(-90deg); }
+  :global(html[data-theme='light']) .header__theme-btn .icon-sun { opacity: 0; transform: rotate(90deg); }
+  :global(html[data-theme='light']) .header__theme-btn .icon-moon { opacity: 1; transform: rotate(0deg); }
+
+  /* Hamburger */
+  .header__hamburger {
+    display: none;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-card);
+    cursor: pointer;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 0;
+  }
+  .header__hamburger span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: var(--color-text);
+    border-radius: 2px;
+    transition: transform 0.3s, opacity 0.3s;
+  }
+  .header__hamburger.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .header__hamburger.active span:nth-child(2) { opacity: 0; }
+  .header__hamburger.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ---- Drawer ---- */
+  .drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    pointer-events: none;
+    visibility: hidden;
+  }
+  .drawer.open {
+    pointer-events: auto;
+    visibility: visible;
+  }
+  .drawer__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .drawer.open .drawer__backdrop { opacity: 1; }
+
+  .drawer__panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 280px;
+    max-width: 85vw;
+    background: var(--color-glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-left: 1px solid var(--color-glass-border);
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    padding: 80px 24px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    overflow-y: auto;
+  }
+  .drawer.open .drawer__panel { transform: translateX(0); }
+
+  .drawer__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .drawer__link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    transition: color 0.2s, background 0.2s;
+  }
+  .drawer__link:hover,
+  .drawer__link.active {
+    color: var(--color-text);
+    background: rgba(139, 92, 246, 0.1);
+  }
+
+  /* Drawer theme toggle */
+  .drawer__theme-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-card);
+    color: var(--color-text);
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+  }
+  .drawer__theme-btn .icon-sun,
+  .drawer__theme-btn .icon-moon { transition: opacity 0.25s; }
+  :global(html[data-theme='dark']) .drawer__theme-btn .icon-sun { display: inline; }
+  :global(html[data-theme='dark']) .drawer__theme-btn .icon-moon { display: none; }
+  :global(html[data-theme='light']) .drawer__theme-btn .icon-sun { display: none; }
+  :global(html[data-theme='light']) .drawer__theme-btn .icon-moon { display: inline; }
+
+  /* Drawer socials */
+  .drawer__social {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-top: 1px solid var(--color-border);
+    padding-top: 20px;
+  }
+  .drawer__social-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    transition: color 0.2s;
+  }
+  .drawer__social-link:hover { color: var(--color-primary); }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 768px) {
+    .header__nav { display: none; }
+    .header__hamburger { display: flex; }
+  }
+</style>

@@ -1,0 +1,93 @@
+---
+/**
+ * About.astro
+ * ============
+ * Two-column numbered card grid presenting the student's personal story.
+ */
+import { personalInfo } from '../data/portfolio';
+---
+
+<section id="about" class="section">
+  <span class="section__label">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    About Me
+  </span>
+  <h2 class="section__title">Get to Know Me</h2>
+  <p class="section__subtitle">A few words about who I am and what drives me.</p>
+
+  <div class="about__grid stagger-children">
+    {personalInfo.about.map((paragraph, i) => (
+      <div class="about__card animate-on-scroll">
+        <div class="about__accent"></div>
+        <span class="about__number">{String(i + 1).padStart(2, '0')}</span>
+        <p class="about__text">{paragraph}</p>
+      </div>
+    ))}
+  </div>
+</section>
+
+<style>
+  .about__grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  .about__card {
+    position: relative;
+    padding: 28px 28px 28px 40px;
+    background: var(--color-card);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius);
+    backdrop-filter: blur(10px);
+    transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+    overflow: hidden;
+  }
+  .about__card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-primary);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .about__card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(139, 92, 246, 0.15);
+  }
+  .about__card:hover::before { opacity: 1; }
+
+  .about__accent {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--gradient-primary);
+    border-radius: 0 4px 4px 0;
+  }
+
+  .about__number {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    margin-bottom: 8px;
+    opacity: 0.6;
+  }
+
+  .about__text {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    line-height: 1.75;
+  }
+
+  @media (max-width: 768px) {
+    .about__grid { grid-template-columns: 1fr; }
+    .about__card { padding: 24px 24px 24px 32px; }
+  }
+</style>

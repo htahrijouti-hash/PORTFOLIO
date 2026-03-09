@@ -1,0 +1,178 @@
+---
+/**
+ * Footer.astro
+ * =============
+ * Three-column footer: brand, quick nav, social connect.
+ * Bottom bar with copyright.
+ */
+import { personalInfo, navItems, socialLinks } from '../data/portfolio';
+
+const icons: Record<string, string> = {
+  code: '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>',
+  github: '<path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/>',
+  linkedin: '<path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-4 0v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>',
+  mail: '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>',
+  'chevron-right': '<polyline points="9 18 15 12 9 6"/>',
+};
+
+function getIcon(name: string): string {
+  return icons[name] || '';
+}
+
+const year = new Date().getFullYear();
+---
+
+<footer class="footer">
+  <div class="footer__inner">
+    <div class="footer__grid">
+      <!-- Brand -->
+      <div class="footer__brand">
+        <a href="#hero" class="footer__logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><Fragment set:html={getIcon('code')} /></svg>
+          <span>{personalInfo.firstName} <span class="footer__logo-accent">{personalInfo.lastName}</span></span>
+        </a>
+        <p class="footer__desc">{personalInfo.subtitle}</p>
+      </div>
+
+      <!-- Quick nav -->
+      <div class="footer__col">
+        <h4 class="footer__col-title">Quick Links</h4>
+        <nav class="footer__nav" aria-label="Footer navigation">
+          {navItems.map((item) => (
+            <a href={item.href} class="footer__link">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><Fragment set:html={getIcon('chevron-right')} /></svg>
+              {item.label}
+            </a>
+          ))}
+        </nav>
+      </div>
+
+      <!-- Connect -->
+      <div class="footer__col">
+        <h4 class="footer__col-title">Connect</h4>
+        <div class="footer__connect">
+          {socialLinks.map((link) => (
+            <a href={link.url} target="_blank" rel="noopener noreferrer" class="footer__social">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><Fragment set:html={getIcon(link.icon)} /></svg>
+              {link.label}
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="footer__bottom">
+      <span>&copy; {year} {personalInfo.firstName} {personalInfo.lastName}. All rights reserved.</span>
+      <span class="footer__credits">Built with <a href="https://astro.build" target="_blank" rel="noopener noreferrer">Astro</a> · Deployed on <a href="https://vercel.com" target="_blank" rel="noopener noreferrer">Vercel</a></span>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    border-top: 1px solid var(--color-border);
+    background: var(--color-glass);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 60px 0 0;
+  }
+
+  .footer__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .footer__grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 40px;
+    padding-bottom: 40px;
+  }
+
+  /* Brand */
+  .footer__logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-bottom: 12px;
+    color: var(--color-primary);
+  }
+  .footer__logo-accent { color: var(--color-accent); }
+  .footer__desc {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    line-height: 1.7;
+    max-width: 300px;
+  }
+
+  /* Columns */
+  .footer__col-title {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--color-text-muted);
+    margin-bottom: 16px;
+  }
+  .footer__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .footer__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    transition: color 0.2s, padding-left 0.2s;
+  }
+  .footer__link:hover {
+    color: var(--color-primary);
+    padding-left: 4px;
+  }
+
+  .footer__connect {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .footer__social {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    transition: color 0.2s, padding-left 0.2s;
+  }
+  .footer__social:hover {
+    color: var(--color-primary);
+    padding-left: 4px;
+  }
+
+  /* Bottom */
+  .footer__bottom {
+    border-top: 1px solid var(--color-border);
+    padding: 20px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .footer__credits a {
+    color: var(--color-primary);
+    transition: opacity 0.2s;
+  }
+  .footer__credits a:hover { opacity: 0.8; }
+
+  @media (max-width: 768px) {
+    .footer__grid { grid-template-columns: 1fr; gap: 32px; }
+    .footer__bottom { flex-direction: column; text-align: center; }
+  }
+</style>

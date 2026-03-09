@@ -1,0 +1,210 @@
+---
+/**
+ * Skills.astro
+ * =============
+ * Technical skills grid + optional soft skills section.
+ * Each card has a Lucide icon, category title, skill chips, and a count.
+ */
+import { technicalSkills, softSkills } from '../data/portfolio';
+
+const icons: Record<string, string> = {
+  code: '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>',
+  server: '<rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>',
+  wrench: '<path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>',
+  cpu: '<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/>',
+  users: '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>',
+  lightbulb: '<path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0018 8 6 6 0 006 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 019 14"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  'trending-up': '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
+  database: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>',
+  globe: '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>',
+};
+
+function getIcon(name: string): string {
+  return icons[name] || icons['code'];
+}
+
+const hasSoft = softSkills.length > 0;
+---
+
+<section id="skills" class="section">
+  <span class="section__label">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
+    </svg>
+    Skills
+  </span>
+  <h2 class="section__title">Technical Arsenal</h2>
+  <p class="section__subtitle">Technologies and tools I work with on a daily basis.</p>
+
+  <!-- Technical Skills divider -->
+  <div class="divider-label">Technical Skills</div>
+
+  <div class="skills__grid stagger-children">
+    {technicalSkills.map((cat) => (
+      <div class="skills__card animate-on-scroll">
+        <div class="skills__icon-box">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <Fragment set:html={getIcon(cat.icon)} />
+          </svg>
+        </div>
+        <div class="skills__info">
+          <div class="skills__header">
+            <h3 class="skills__title">{cat.title}</h3>
+            <span class="skills__count">{cat.skills.length}</span>
+          </div>
+          <div class="skills__chips">
+            {cat.skills.map((skill) => (
+              <span class="skills__chip">{skill}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+
+  {hasSoft && (
+    <>
+      <div class="divider-label">Soft Skills</div>
+      <div class="soft__grid stagger-children">
+        {softSkills.map((s) => (
+          <div class="soft__card animate-on-scroll">
+            <svg class="soft__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <Fragment set:html={getIcon(s.icon)} />
+            </svg>
+            <div>
+              <h4 class="soft__name">{s.name}</h4>
+              <p class="soft__desc">{s.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  )}
+</section>
+
+<style>
+  .skills__grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  .skills__card {
+    display: flex;
+    gap: 16px;
+    padding: 24px;
+    background: var(--color-card);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius);
+    backdrop-filter: blur(10px);
+    transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+    overflow: hidden;
+    position: relative;
+  }
+  .skills__card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--gradient-primary);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .skills__card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(139, 92, 246, 0.15);
+  }
+  .skills__card:hover::before { opacity: 1; }
+
+  .skills__icon-box {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    border-radius: var(--radius-sm);
+    color: var(--color-primary);
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .skills__card:hover .skills__icon-box {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+  }
+
+  .skills__info { flex: 1; }
+  .skills__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .skills__title { font-size: 0.95rem; font-weight: 600; }
+  .skills__count {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    opacity: 0.6;
+  }
+
+  .skills__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .skills__chip {
+    padding: 3px 10px;
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.12);
+    border-radius: 100px;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+
+  /* Soft skills */
+  .soft__grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .soft__card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 20px;
+    background: var(--color-card);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius);
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .soft__card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+  }
+  .soft__icon {
+    color: var(--color-accent);
+    min-width: 20px;
+    margin-top: 2px;
+    transition: transform 0.3s, filter 0.3s;
+  }
+  .soft__card:hover .soft__icon {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.4));
+  }
+  .soft__name { font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
+  .soft__desc { font-size: 0.82rem; color: var(--color-text-muted); line-height: 1.5; }
+
+  :global(html[data-theme='light']) .skills__icon-box {
+    background: rgba(37, 99, 235, 0.08);
+    border-color: rgba(37, 99, 235, 0.12);
+  }
+  :global(html[data-theme='light']) .skills__chip {
+    background: rgba(124, 58, 237, 0.06);
+    border-color: rgba(124, 58, 237, 0.1);
+  }
+
+  @media (max-width: 768px) {
+    .skills__grid { grid-template-columns: 1fr; }
+    .soft__grid { grid-template-columns: 1fr; }
+  }
+</style>
